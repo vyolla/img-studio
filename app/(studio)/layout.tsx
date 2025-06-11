@@ -14,14 +14,8 @@
 
 'use client'
 
-import SideNav from '../ui/transverse-components/SideNavigation'
-import Box from '@mui/material/Box'
+import StudioLayout from './StudioLayout'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <Box sx={{ display: 'flex' }}>
-      <SideNav />
-      {children}
-    </Box>
-  )
+  return <StudioLayout>{children}</StudioLayout>
 }

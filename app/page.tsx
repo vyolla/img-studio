@@ -15,17 +15,39 @@
 'use client'
 
 import * as React from 'react'
+import { useEffect } from 'react'
 import Box from '@mui/material/Box'
 import Image from 'next/image'
 import icon from '../public/ImgStudioLogo.svg'
 import GoogleSignInButton from './ui/ux-components/GoogleSignInButton'
 import { pages } from './routes'
 import { useRouter } from 'next/navigation'
+import { auth } from './api/firebase/config'
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { useAppContext } from './context/app-context'
 
 export default function Page() {
   const router = useRouter()
-  const handleClick = () => {
-    router.push(pages.Generate.href)
+  const { appContext } = useAppContext()
+
+  useEffect(() => {
+    if (appContext && !appContext.isLoading && appContext.userID) {
+      router.push(pages.Generate.href)
+    }
+  }, [appContext, router])
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider()
+    try {
+      await signInWithPopup(auth, provider)
+      router.push(pages.Generate.href)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  if (appContext.isLoading || appContext.userID) {
+    return null;
   }
 
   return (
@@ -33,7 +55,7 @@ export default function Page() {
       <Box justifyContent="left" minHeight="100vh" pl={15} pt={10}>
         <Image priority src={icon} width={800} alt="ImgStudio" />
         <Box sx={{ pl: 2 }}>
-          <GoogleSignInButton onClick={handleClick} />
+          <GoogleSignInButton onClick={handleGoogleSignIn} />
         </Box>
       </Box>
     </main>

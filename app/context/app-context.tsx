@@ -17,6 +17,8 @@
 import { createContext, useState, useEffect, useContext } from 'react'
 import { exportStandardFields, ExportMediaFormFieldsI } from '../api/export-utils'
 import { fetchJsonFromStorage } from '../api/cloud-storage/action'
+import { auth } from '../api/firebase/config'
+import { onAuthStateChanged, User } from 'firebase/auth'
 
 export interface appContextDataI {
   gcsURI?: string
@@ -30,15 +32,15 @@ export interface appContextDataI {
 }
 
 interface AppContextType {
-  appContext: appContextDataI | null
+  appContext: appContextDataI
   setAppContext: React.Dispatch<React.SetStateAction<AppContextType['appContext']>>
   error: Error | string | null
   setError: React.Dispatch<React.SetStateAction<Error | string | null>>
 }
 
-export const appContextDataDefault = {
+export const appContextDataDefault: appContextDataI = {
   gcsURI: '',
-  userID: '',
+  userID: undefined,
   exportMetaOptions: undefined,
   isLoading: true,
   imageToEdit: '',
@@ -58,6 +60,16 @@ export function ContextProvider({ children }: { children: React.ReactNode }) {
   const [appContext, setAppContext] = useState<AppContextType['appContext']>(appContextDataDefault)
   const [error, setError] = useState<Error | string | null>(null)
   const [retries, setRetries] = useState(0)
+  const [user, setUser] = useState<User | null>(null)
+  const [authResolved, setAuthResolved] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthResolved(true);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     async function fetchAndUpdateContext() {
@@ -68,7 +80,6 @@ export function ContextProvider({ children }: { children: React.ReactNode }) {
           !process.env.NEXT_PUBLIC_VERTEX_API_LOCATION ||
           !process.env.NEXT_PUBLIC_GCS_BUCKET_LOCATION ||
           !process.env.NEXT_PUBLIC_GEMINI_MODEL ||
-          !process.env.NEXT_PUBLIC_PRINCIPAL_TO_USER_FILTERS ||
           !process.env.NEXT_PUBLIC_OUTPUT_BUCKET ||
           !process.env.NEXT_PUBLIC_TEAM_BUCKET ||
           !process.env.NEXT_PUBLIC_EXPORT_FIELDS_OPTIONS_URI
@@ -80,35 +91,10 @@ export function ContextProvider({ children }: { children: React.ReactNode }) {
           throw Error('Missing required environment variables for editing')
         }
 
-        // 1. Fetch User ID from client-side
         let fetchedUserID = ''
 
-        if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_TEST_DEV_USER_ID) {
-          // Locally IAP is not enabled
-          fetchedUserID = process.env.NEXT_PUBLIC_TEST_DEV_USER_ID
-        } else {
-          // Fetching ID via IAP
-          const response = await fetch('/api/google-auth')
-          const authParams = await response.json()
-          if (typeof authParams === 'object' && 'error' in authParams) {
-            throw Error(authParams.error)
-          }
-
-          let targetPrincipal: string
-
-          if (authParams !== undefined && authParams['targetPrincipal'] !== undefined) {
-            targetPrincipal = authParams['targetPrincipal']
-            const principalToUserFilters = process.env.NEXT_PUBLIC_PRINCIPAL_TO_USER_FILTERS
-              ? process.env.NEXT_PUBLIC_PRINCIPAL_TO_USER_FILTERS
-              : ''
-
-            principalToUserFilters
-              .split(',')
-              .forEach((filter) => (targetPrincipal = targetPrincipal.replace(filter, '')))
-          } else {
-            throw Error('An unexpected error occurred while fetching User ID')
-          }
-          fetchedUserID = targetPrincipal
+        if (user) {
+          fetchedUserID = user.email || ''
         }
 
         // 2. Set GCS URI for all edited/ generated images
@@ -127,6 +113,7 @@ export function ContextProvider({ children }: { children: React.ReactNode }) {
 
         // 4. Update Context with all fetched data
         setAppContext({
+          ...appContext,
           userID: fetchedUserID,
           gcsURI: gcsURI?.toString(),
           exportMetaOptions: ExportImageFormFields,
@@ -150,8 +137,14 @@ export function ContextProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    fetchAndUpdateContext()
-  }, [retries])
+    if (authResolved) {
+      if (user) {
+        fetchAndUpdateContext()
+      } else {
+        setAppContext((prev) => ({ ...prev, isLoading: false, userID: undefined }))
+      }
+    }
+  }, [user, retries, authResolved])
 
   const contextValue = {
     appContext,

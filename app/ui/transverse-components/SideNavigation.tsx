@@ -16,16 +16,26 @@
 
 import * as React from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-
-import { Drawer, List, ListItem, Typography, ListItemButton, Stack, IconButton, Box } from '@mui/material'
-
+import {
+  Drawer,
+  List,
+  ListItem,
+  Typography,
+  ListItemButton,
+  Stack,
+  IconButton,
+  Box,
+  Button,
+} from '@mui/material'
 import Image from 'next/image'
 import icon from '../../../public/ImgStudioLogoReversedMini.svg'
 import { pages } from '../../routes'
-
 import theme from '../../theme'
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight } from '@mui/icons-material'
+import { ChevronLeft, ChevronRight, Logout } from '@mui/icons-material'
+import { useAppContext } from '../../context/app-context'
+import { auth } from '../../api/firebase/config'
+
 const { palette } = theme
 
 const drawerWidth = 265
@@ -67,8 +77,15 @@ const CustomizedMenuItem = {
 export default function SideNav() {
   const router = useRouter()
   const pathname = usePathname()
+  const { appContext, setAppContext } = useAppContext()
 
   const [open, setOpen] = useState(true)
+
+  const handleLogout = async () => {
+    await auth.signOut()
+    setAppContext((prev) => ({ ...prev, userID: undefined }))
+    router.push('/')
+  }
 
   return (
     <Drawer variant="permanent" anchor="left" sx={open ? CustomizedDrawer : CustomizedDrawerClosed}>
@@ -135,33 +152,38 @@ export default function SideNav() {
       )}
 
       {open && (
-        <Typography
-          variant="caption"
-          align="left"
+        <Box
           sx={{
             position: 'absolute',
             bottom: 15,
             left: 15,
-            fontSize: '0.6rem',
-            fontWeight: 400,
-            color: palette.secondary.light,
+            right: 15,
           }}
         >
-          / Made with <span style={{ margin: 1, color: palette.primary.main }}>❤</span> by
-          <a
-            href="https://www.linkedin.com/in/aduboue/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: 'white',
-              fontWeight: 700,
-              textDecoration: 'none',
-              margin: 2,
+          <Typography
+            variant="caption"
+            align="left"
+            sx={{
+              fontSize: '0.8rem',
+              fontWeight: 400,
+              color: palette.secondary.light,
             }}
           >
-            @Agathe
-          </a>
-        </Typography>
+            {appContext.userID}
+          </Typography>
+          <Button
+            onClick={handleLogout}
+            startIcon={<Logout />}
+            sx={{
+              color: 'white',
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+            }}
+          >
+            Logout
+          </Button>
+        </Box>
       )}
       <IconButton
         onClick={() => setOpen(!open)}

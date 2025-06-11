@@ -12,23 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { NextRequest, NextResponse } from 'next/server'
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 
-export async function GET(req: NextRequest) {
-  let response = {}
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
-  try {
-    if (req.headers.get('X-Goog-Authenticated-User-Email')) {
-      response = {
-        targetPrincipal: req.headers.get('X-Goog-Authenticated-User-Email'),
-      }
-    } else {
-      throw Error('ID header not found')
-    }
-  } catch (error) {
-    console.error(error)
-    response = { error: 'Authentication error', status: 500 }
-  }
-
-  return NextResponse.json(response)
-}
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
