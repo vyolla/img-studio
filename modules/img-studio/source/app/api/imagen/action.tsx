@@ -350,7 +350,14 @@ export async function generateImage(
     const auth = new GoogleAuth({
       scopes: 'https://www.googleapis.com/auth/cloud-platform',
     })
+    console.log('Auth object:', auth);
+    console.log('GOOGLE_APPLICATION_CREDENTIALS:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+    console.log('GCLOUD_PROJECT:', process.env.GCLOUD_PROJECT);
+    console.log('NEXT_PUBLIC_PROJECT_ID:', process.env.NEXT_PUBLIC_PROJECT_ID);
+
     client = await auth.getClient()
+    console.log('Auth client:', client);
+
   } catch (error) {
     console.error(error)
     return {
@@ -459,7 +466,9 @@ export async function generateImage(
       if (!fullRefDescriptionDone.includes(reference.refId)) {
         fullRefDescriptionDone.push(reference.refId)
         const fullAIrefDescription = await getFullReferenceDescription(reference.base64Image, reference.referenceType)
-        reqData.instances[0].prompt = reqData.instances[0].prompt + `\n\n[${reference.refId}] ` + fullAIrefDescription
+        reqData.instances[0].prompt = reqData.instances[0].prompt + `
+
+[${reference.refId}] ` + fullAIrefDescription
       }
     }
   }
