@@ -15,6 +15,6 @@
 #  */
 
 output "frontend_url" {
-  value = google_cloud_run_v2_service.img_studio.uri
+  value = module.img-studio[0].frontend_url
   description = "Frontend URL"
 }
