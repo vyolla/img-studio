@@ -24,7 +24,7 @@
 
 ## 1\\ Open the **GitHub** repository in **Cloud Shell**
 
-<a href="https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/vyolla/img-studio"><img src="http://gstatic.com/cloudssh/images/open-btn.svg" alt="Open in
+<a href="https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/vyolla/img-studio" target="_blank"><img src="http://gstatic.com/cloudssh/images/open-btn.svg" alt="Open in
 Cloud Shell"></a>
 
 ## 2\\ Make the setup.sh executable
