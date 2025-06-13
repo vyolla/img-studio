@@ -155,7 +155,7 @@ export default function SideNav() {
         <Box
           sx={{
             position: 'absolute',
-            bottom: 15,
+            bottom: 30,
             left: 15,
             right: 15,
           }}
@@ -164,7 +164,7 @@ export default function SideNav() {
             variant="caption"
             align="left"
             sx={{
-              fontSize: '0.8rem',
+              fontSize: '0.7rem',
               fontWeight: 400,
               color: palette.secondary.light,
             }}
@@ -179,11 +179,42 @@ export default function SideNav() {
               position: 'absolute',
               right: 0,
               bottom: 0,
+              fontSize: '0.4rem',
+              fontWeight: 400,
             }}
           >
             Logout
           </Button>
         </Box>
+      )}
+      {open && (
+        <Typography
+          variant="caption"
+          align="left"
+          sx={{
+            position: 'absolute',
+            bottom: 15,
+            left: 15,
+            fontSize: '0.6rem',
+            fontWeight: 400,
+            color: palette.secondary.light,
+          }}
+        >
+          / Made with <span style={{ margin: 1, color: palette.primary.main }}>❤</span> by
+          <a
+            href="https://www.linkedin.com/in/aduboue/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: 'white',
+              fontWeight: 700,
+              textDecoration: 'none',
+              margin: 2,
+            }}
+          >
+            @Agathe
+          </a>
+        </Typography>
       )}
       <IconButton
         onClick={() => setOpen(!open)}
