@@ -16,7 +16,7 @@
 
 module "project_services" {
   source                      = "terraform-google-modules/project-factory/google//modules/project_services"
-  version                     = "~> 15.0"
+  version                     = "~> 18.0"
   disable_services_on_destroy = var.disable_services_on_destroy
 
   project_id = var.project_id
@@ -73,12 +73,12 @@ resource "google_project_iam_member" "img-studio-sa" {
   member  = google_service_account.img-studio-sa.member
   for_each = toset([
     "roles/aiplatform.serviceAgent", 
-    "roles/aiplatform.user", 
-    "roles/bigquery.dataEditor",     
+    "roles/aiplatform.user",      
     "roles/storage.objectViewer",     
     "roles/artifactregistry.writer",
     "roles/artifactregistry.reader",
     "roles/logging.logWriter",
+    "roles/ml.serviceAgent",
   ])
   role = each.key
 

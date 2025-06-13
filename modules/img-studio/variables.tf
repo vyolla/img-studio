@@ -57,14 +57,6 @@ variable "model_name" {
   default     = "gemini-2.0-flash-001"
 }
 
-variable "bq_dataset" {
-  type        = string
-}
-
-variable "bq_table" {
-  type        = string
-}
-
 variable "sa_email" {
   type        = string
 }

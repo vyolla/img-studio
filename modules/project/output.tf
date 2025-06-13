@@ -15,7 +15,7 @@
  */
 
 output "sa_email" {
-  value = google_service_account.ia_packaged_sa.email
+  value = google_service_account.img-studio-sa.email
   description = "SA"
 }
 

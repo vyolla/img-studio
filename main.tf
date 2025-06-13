@@ -24,8 +24,6 @@ module "project-host" {
     count           = var.deploy_modules["img-studio"] ? 1 : 0
     source          = "./modules/img-studio"
     project_id      = var.project_id
-    bq_dataset      = module.bqeasy.bq_dataset
-    bq_table        = module.bqeasy.bq_table
     region          = var.region
     api_key         = module.project-host.firebase_api_key
     sa_email        = module.project-host.sa_email

@@ -80,9 +80,55 @@ resource "local_file" "cloud_build" {
   content  = <<-EOF
   steps:
     - name: 'gcr.io/cloud-builders/docker'
-      script: |
-        docker build -t ${local.image_name} .
-      automapSubstitutions: true
+      args:
+        [
+          'build',
+          '-t',
+          '${local.image_name}',
+          '--build-arg',
+          '_NEXT_PUBLIC_PROJECT_ID=${var.project_id}',
+          '--build-arg',
+          '_NEXT_PUBLIC_VERTEX_API_LOCATION=${var.region}',
+          '--build-arg',
+          '_NEXT_PUBLIC_GCS_BUCKET_LOCATION=${var.region}',
+          '--build-arg',
+          '_NEXT_PUBLIC_GEMINI_MODEL=${var.model_name}',
+          '--build-arg',
+          '_NEXT_PUBLIC_SEG_MODEL=${var.model_name}',
+          '--build-arg',
+          '_NEXT_PUBLIC_EDIT_ENABLED=true',
+          '--build-arg',
+          '_NEXT_PUBLIC_VEO_ENABLED=true',
+          '--build-arg',
+          '_NEXT_PUBLIC_VEO_ITV_ENABLED=true',
+          '--build-arg',
+          '_NEXT_PUBLIC_VEO_ADVANCED_ENABLED=true',
+          '--build-arg',
+          '_NEXT_PUBLIC_PRINCIPAL_TO_USER_FILTERS=',
+          '--build-arg',
+          '_NEXT_PUBLIC_OUTPUT_BUCKET=${local.imgstudio_output}',
+          '--build-arg',
+          '_NEXT_PUBLIC_TEAM_BUCKET=${local.imgstudio_library}',
+          '--build-arg',
+          '_NEXT_PUBLIC_EXPORT_FIELDS_OPTIONS_URI=gs://${google_storage_bucket.export_cfg.name}/${google_storage_bucket_object.export_cfg_file.name}',
+          '--build-arg',
+          '_NEXT_PUBLIC_FIREBASE_API_KEY=${var.api_key}',
+          '--build-arg',
+          '_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${var.project_id}.firebaseapp.com',
+          '--build-arg',
+          '_NEXT_PUBLIC_FIREBASE_PROJECT_ID=${var.project_id}',
+          '--build-arg',
+          '_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${var.project_id}.appspot.com',
+          '--build-arg',
+          '_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=',
+          '--build-arg',
+          '_NEXT_PUBLIC_FIREBASE_APP_ID=',
+          '.',
+        ]
+
+      # script: |
+      #   docker build -t ${local.image_name} .
+      # automapSubstitutions: true
   images:
   - '${local.image_name}'
   EOF
@@ -96,7 +142,7 @@ resource "null_resource" "build_image" {
   }
 
   provisioner "local-exec" {
-    command = "cd modules/anamneasy/source && gcloud builds submit --region=${var.region} --project=${var.project_id} --config cloudbuild.yaml"
+    command = "cd modules/img-studio/source && gcloud builds submit --region=${var.region} --project=${var.project_id} --config cloudbuild.yaml"
   }
     depends_on = [local_file.cloud_build]
 }
@@ -152,8 +198,64 @@ resource "google_cloud_run_v2_service" "img_studio" {
 
 resource "google_cloud_run_service_iam_member" "run" {
   project = var.project_id
-  location = google_cloud_run_v2_service.anamneasy.location
-  service  = google_cloud_run_v2_service.anamneasy.name
+  location = google_cloud_run_v2_service.img_studio.location
+  service  = google_cloud_run_v2_service.img_studio.name
   role     = "roles/run.invoker"
   member   = "allUsers"
+}
+
+## Firestore
+
+resource "google_firestore_database" "database" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.region
+  type        = "FIRESTORE_NATIVE"
+
+  delete_protection_state = "DELETE_PROTECTION_ENABLED"
+}
+
+resource "google_firestore_index" "metadata_composite_index" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "metadata"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path   = "combinedFilters"
+    array_config = "CONTAINS"
+  }
+
+  fields {
+    field_path = "timestamp"
+    order      = "DESCENDING"
+  }
+
+  fields {
+    field_path = "__name__"
+    order      = "DESCENDING"
+  }
+}
+
+resource "google_firebaserules_release" "primary" {
+  name         = "cloud.firestore"
+  project      = var.project_id
+  ruleset_name = "projects/${var.project_id}/rulesets/${google_firebaserules_ruleset.firestore_rules.name}"
+  depends_on = [
+    google_firestore_database.database,
+    google_firebaserules_ruleset.firestore_rules
+  ]
+}
+
+resource "google_firebaserules_ruleset" "firestore_rules" {
+  project  = var.project_id
+  source {
+    files {
+      content = templatefile("${path.module}/firestore.rules", {
+        service_account_email = var.sa_email
+      })
+      name = "firestore.rules"
+    }
+    
+  }
 }
